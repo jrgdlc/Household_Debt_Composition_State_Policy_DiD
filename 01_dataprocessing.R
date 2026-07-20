@@ -1,6 +1,7 @@
 library(tidycensus)
 library(tidyverse)
 library(readxl)
+library(fredr)
 
 # Annual Debt by State (NYFED)
 debt <- read_xlsx("data/raw/area_report_by_year.xlsx", sheet = "total")
@@ -9,9 +10,8 @@ colnames(debt) <- debt[1,]
 debt <- debt[-1,]
 debt_long <- debt %>% 
   pivot_longer(
-    cols = -state,            # Keep the "state" column as is, pivot everything else
-    names_to = "quarter",     # The new column that will hold your "yyyy-q1" values
-    values_to = "debt"        # The new column that will hold the actual debt numbers
+    cols = -state,
+    names_to = "quarter",    values_to = "debt"
   ) 
 
 auto <- read_xlsx("data/raw/area_report_by_year.xlsx", sheet = "auto")
@@ -96,4 +96,38 @@ debtpanel <- debtpanel %>%
   select(!c(`NA`,quarter)) %>%
   mutate(debt = as.numeric(debt))
 
+# Add in CPI adjustment for real dollar values
+fredr_set_key("5913cd67e96776fd31cf83ccc1d7b96c")
+
+cpi <- fredr(
+  series_id = "CPIAUCSL",
+  observation_start = as.Date("2003-01-01")
+)
+
+cpi <- cpi %>%
+  mutate(year = year(date)) %>%
+  group_by(year) %>%
+  summarise(CPI = mean(value))
+
+base_cpi <- cpi %>%
+  filter(year == 2024) %>%
+  pull("CPI")
+
+cpi <- cpi %>%
+  mutate(adj_factor = base_cpi / CPI)
+
+debtpanel <- debtpanel %>%
+  left_join(cpi, by = "year") %>%
+  mutate(
+    total_debt_real = as.numeric(debt) * adj_factor,
+    mortgage_debt_real = as.numeric(mortgage) * adj_factor,
+    auto_debt_real = as.numeric(auto) * adj_factor,
+    credit_card_debt_real = as.numeric(credit) * adj_factor,
+    student_debt_real = as.numeric(studentloan) * adj_factor,
+    median_income_real = as.numeric(median_income) * adj_factor,
+    median_rent_real = as.numeric(median_rent) * adj_factor,
+    median_home_value_real = as.numeric(median_home_value) * adj_factor
+  )
+
+# Export combined Debt and Demographics panel
 write.csv(debtpanel, "state_debt_demographics.csv")
