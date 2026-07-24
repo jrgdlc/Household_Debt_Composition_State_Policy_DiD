@@ -99,9 +99,10 @@ panel <- panel %>%
   select(-rate_cap_year, -comp_reform_year, -nm_tighten_year,
          -always_restrictive)
 
+write.csv(panel, "state_debt_reforms.csv")
 
-# Data Exploration and visualization
-# Debt data and composition
+### Data Exploration and visualization
+## Debt data and composition
 # Plot: Debt per capita around reform year (only states with an in-panel policy change)
 panel %>%
   filter(!is.na(event_time), abs(event_time) <= 5) %>%
@@ -191,7 +192,7 @@ panel_long_debt %>%
   ) +
   theme_minimal()
 
-# Demographic data
+## Demographic data
 panel <- panel %>%
   mutate(across(c(total_pop, white, black, native, asian, pacific, other, multiracial,
                    hispanic, college, masters, professional, doctorate, poverty,
