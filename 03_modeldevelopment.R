@@ -133,5 +133,75 @@ feols_ohco_did_fe_edu <- feols(student_debt_real ~ treated_2019 * post | state +
 summary(feols_ohco_did_fe_edu)
 
 # include select demographics
-feols_ohco_did_fe_demo <- feols(credit_card_debt_real ~ treated_2019 * post + median_income + unemployed + college + median_rent | state + year, data = ohco_did_data, cluster = ~state)
+feols_ohco_did_fe_demo <- feols(credit_card_debt_real ~ treated_2019 * post + median_age + median_rent_real + labor_force | state + year, data = ohco_did_data, cluster = ~state)
 summary(feols_ohco_did_fe_demo)
+
+# Economic only: income + unemployment
+spec_econ <- feols(credit_card_debt_real ~ treated_2019 * post + median_income + unemployed | state + year, data = ohco_did_data)
+summary(spec_econ)
+
+# Economic + poverty
+spec_econ_pov <- feols(credit_card_debt_real ~ treated_2019 * post + median_income + unemployed + poverty | state + year, data = ohco_did_data)
+summary(spec_econ_pov)
+
+# Economic + housing costs
+spec_econ_housing <- feols(credit_card_debt_real ~ treated_2019 * post + median_income + unemployed + median_rent + median_home_value | state + year, data = ohco_did_data)
+summary(spec_econ_housing)
+
+# Economic + education
+spec_econ_edu <- feols(credit_card_debt_real ~ treated_2019 * post + median_income + unemployed + college + masters | state + year, data = ohco_did_data)
+summary(spec_econ_edu)
+
+# Economic + age structure
+spec_econ_age <- feols(credit_card_debt_real ~ treated_2019 * post + median_income + unemployed + median_age + `X18_29` + `X30_44` + `X45_64` | state + year, data = ohco_did_data)
+summary(spec_econ_age)
+
+# Economic + race/ethnicity (drop one category to avoid collinearity, e.g. white as reference)
+spec_econ_race <- feols(credit_card_debt_real ~ treated_2019 * post + median_income + unemployed + black + native + asian + hispanic | state + year, data = ohco_did_data)
+summary(spec_econ_race)
+
+# Economic + poverty + housing (no education/race/age)
+spec_econ_pov_housing <- feols(credit_card_debt_real ~ treated_2019 * post + median_income + unemployed + poverty + median_rent + median_home_value | state + year, data = ohco_did_data)
+summary(spec_econ_pov_housing)
+
+# Full set minus race variables (since they sum to ~1, flagged multicollinearity concern)
+spec_full_norace <- feols(credit_card_debt_real ~ treated_2019 * post + median_age + total_pop + college + masters + professional + doctorate + poverty + median_income + labor_force + unemployed | state + year, data = ohco_did_data)
+summary(spec_full_norace)
+
+# Full set minus age brackets, minus race (keep median_age only)
+spec_lean <- feols(credit_card_debt_real ~ treated_2019 * post + median_age + poverty + median_income + unemployed + college | state + year, data = ohco_did_data)
+summary(spec_lean)
+
+## Comparison table: Adjusted R2 across specifications
+spec_comparison <- tibble(
+  spec = c( "econ", "econ_pov", "econ_housing", "econ_edu", "econ_age",
+           "econ_race", "econ_pov_housing", "full_norace", "lean"),
+  within_r2 = c(
+    r2(spec_econ, "wr2"),
+    r2(spec_econ_pov, "wr2"),
+    r2(spec_econ_housing, "wr2"),
+    r2(spec_econ_edu, "wr2"),
+    r2(spec_econ_age, "wr2"),
+    r2(spec_econ_race, "wr2"),
+    r2(spec_econ_pov_housing, "wr2"),
+    r2(spec_full_norace, "wr2"),
+    r2(spec_lean, "wr2")
+  )
+) %>%
+  arrange(desc(within_r2))
+
+spec_comparison
+
+## Additional model runs with logged values
+ohco_did_data_l <- ohco_did_data %>%
+  mutate(log_credit = log(credit_card_debt_real),
+         log_income = log(median_income_real), 
+         log_age = log(median_age), 
+         log_population = log(total_pop),
+         log_poverty = log(poverty), 
+         log_labor_force = log(labor_force), 
+         log_unemployed = log(unemployed))
+
+# Model runs with logged values
+model_1 <- feols(log_credit ~ treated_2019 * post + log_income + log_age + log_population + log_poverty + log_labor_force + log_unemployed | state + year, data = ohco_did_data_l)
+summary(model_1)
