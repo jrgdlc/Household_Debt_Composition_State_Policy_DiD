@@ -7,7 +7,7 @@ panel <- read.csv("data/processed/state_debt_reforms.csv") %>%
   filter(state != "allUS") %>%
   mutate(
     reform_year = as.numeric(reform_year),
-    state_id    = as.integer(factor(state))   # did::att_gt wants a numeric id
+    state_id    = as.integer(factor(state))
   )
 
 # Drop always restrictive states (no in-panel changes)
@@ -20,6 +20,32 @@ estimation_states <- panel %>%
   filter(!state %in% always_restrictive) %>%
   distinct(state) %>%
   pull(state)
+
+# Adding log and share variables
+panel <- panel %>%
+  mutate(log_credit = log(credit_card_debt_real),
+         log_auto = log(auto_debt_real),
+         log_mortgage = log(mortgage_debt_real),
+         log_student = log(student_debt_real),
+         log_income = log(median_income_real), 
+         log_age = log(median_age), 
+         log_population = log(total_pop),
+         log_poverty = log(poverty), 
+         log_labor_force = log(labor_force), 
+         log_unemployed = log(unemployed),
+         credit_share = credit_card_debt_real / total_debt_real,
+         auto_share = auto_debt_real / total_debt_real,
+         mortgage_share = mortgage_debt_real / total_debt_real,
+         student_share = student_debt_real / total_debt_real,
+         college_plus = college + professional + masters + doctorate,
+         college_share = college_plus / total_pop,
+         poverty_share = poverty / total_pop,
+         labor_share = labor_force / total_pop,
+         unemployment_share = unemployed / total_pop,
+         `18_29_share` = X18_29 / total_pop,
+         `30_44_share` = X30_44 / total_pop,
+         `45_64_share` = X45_64 / total_pop,
+         `65_plus_share` = X65plus / total_pop)
 
 ### Initial regressions using total_debt_real as dependent variable
 ## Pooled regression baseline regressions (bias, not controlled for panel structure)
@@ -192,64 +218,38 @@ spec_comparison <- tibble(
 
 spec_comparison
 
-### Transforming values for additional model runs
 ## Additional model runs with logged values and share values
-ohco_did_data_l <- ohco_did_data %>%
-  mutate(log_credit = log(credit_card_debt_real),
-         log_auto = log(auto_debt_real),
-         log_mortgage = log(mortgage_debt_real),
-         log_student = log(student_debt_real),
-         log_income = log(median_income_real), 
-         log_age = log(median_age), 
-         log_population = log(total_pop),
-         log_poverty = log(poverty), 
-         log_labor_force = log(labor_force), 
-         log_unemployed = log(unemployed),
-         credit_share = credit_card_debt_real / total_debt_real,
-         auto_share = auto_debt_real / total_debt_real,
-         mortgage_share = mortgage_debt_real / total_debt_real,
-         student_share = student_debt_real / total_debt_real,
-         college_plus = college + professional + masters + doctorate,
-         college_share = college_plus / total_pop,
-         poverty_share = poverty / total_pop,
-         labor_share = labor_force / total_pop,
-         unemployment_share = unemployed / total_pop,
-         `18_29_share` = X18_29 / total_pop,
-         `30_44_share` = X30_44 / total_pop,
-         `45_64_share` = X45_64 / total_pop,
-         `65_plus_share` = X65plus / total_pop)
-
 # Model runs with logged values
-model_log_cc_1 <- feols(log_credit ~ treated_2019 * post + log_income + log_age + log_population + log_poverty + log_labor_force + log_unemployed | state + year, data = ohco_did_data_l)
+model_log_cc_1 <- feols(log_credit ~ treated_2019 * post + log_income + log_age + log_population + log_poverty + log_labor_force + log_unemployed | state + year, data = ohco_did_data)
 summary(model_log_cc_1)
 
-model_log_auto_1 <- feols(log_auto ~ treated_2019 * post + log_income + log_age + log_population + log_poverty + log_labor_force + log_unemployed | state + year, data = ohco_did_data_l)
+model_log_auto_1 <- feols(log_auto ~ treated_2019 * post + log_income + log_age + log_population + log_poverty + log_labor_force + log_unemployed | state + year, data = ohco_did_data)
 summary(model_log_auto_1)
  
-model_log_mortgage_1 <- feols(log_mortgage ~ treated_2019 * post + log_income + log_age + log_population + log_poverty + log_labor_force + log_unemployed | state + year, data = ohco_did_data_l)
+model_log_mortgage_1 <- feols(log_mortgage ~ treated_2019 * post + log_income + log_age + log_population + log_poverty + log_labor_force + log_unemployed | state + year, data = ohco_did_data)
 summary(model_log_mortgage_1)
  
-model_log_student_1 <- feols(log_student ~ treated_2019 * post + log_income + log_age + log_population + log_poverty + log_labor_force + log_unemployed | state + year, data = ohco_did_data_l)
+model_log_student_1 <- feols(log_student ~ treated_2019 * post + log_income + log_age + log_population + log_poverty + log_labor_force + log_unemployed | state + year, data = ohco_did_data)
 summary(model_log_student_1)
 
 # Model with share of debt categories instead of absolute
-model_share_cc_1 <- feols(credit_share ~ treated_2019 * post + median_age + poverty + median_income + unemployed + college | state + year, data = ohco_did_data_l)
+model_share_cc_1 <- feols(credit_share ~ treated_2019 * post + median_age + poverty + median_income + unemployed + college | state + year, data = ohco_did_data)
 summary(model_share_cc_1)
 
-model_share_auto_1 <- feols(auto_share ~ treated_2019 * post + median_age + poverty + median_income + unemployed + college | state + year, data = ohco_did_data_l)
+model_share_auto_1 <- feols(auto_share ~ treated_2019 * post + median_age + poverty + median_income + unemployed + college | state + year, data = ohco_did_data)
 summary(model_share_auto_1)
  
-model_share_mortgage_1 <- feols(mortgage_share ~ treated_2019 * post + median_age + poverty + median_income + unemployed + college | state + year, data = ohco_did_data_l)
+model_share_mortgage_1 <- feols(mortgage_share ~ treated_2019 * post + median_age + poverty + median_income + unemployed + college | state + year, data = ohco_did_data)
 summary(model_share_mortgage_1)
  
-model_share_student_1 <- feols(student_share ~ treated_2019 * post + median_age + poverty + median_income + unemployed + college | state + year, data = ohco_did_data_l)
+model_share_student_1 <- feols(student_share ~ treated_2019 * post + median_age + poverty + median_income + unemployed + college | state + year, data = ohco_did_data)
 summary(model_share_student_1)
 
 # Adding demographic variables, focusing again on cc debt
-model_share_covariates_cc <- feols(credit_share ~ treated_2019 * post + college_share + poverty_share + labor_share + unemployment_share + `18_29_share` + `30_44_share` + `45_64_share` | state + year, data = ohco_did_data_l)
+model_share_covariates_cc <- feols(credit_share ~ treated_2019 * post + college_share + poverty_share + labor_share + unemployment_share + `18_29_share` + `30_44_share` + `45_64_share` | state + year, data = ohco_did_data)
 summary(model_share_covariates_cc)
  
-model_share_covariates_lean <- feols(credit_share ~ treated_2019 * post + median_age + college_share + poverty_share + unemployment_share | state + year, data = ohco_did_data_l)
+model_share_covariates_lean <- feols(credit_share ~ treated_2019 * post + median_age + college_share + poverty_share + unemployment_share | state + year, data = ohco_did_data)
 summary(model_share_covariates_lean)
  
 # Comparison table: within R2 across the new log-outcome models
@@ -282,12 +282,14 @@ share_spec_comparison <- tibble(
  
 share_spec_comparison
 
-### Now implementing 'did' package for more robust treatment time handling
+### Now implementing 'did' package for more robust treatment time handling - multiple treatments in multiple periods
 cs_sample <- panel %>%
   filter(state %in% estimation_states) %>%
+  filter(year != 2020, state != "PR") %>%
   mutate(reform_year_cs = if_else(is.na(reform_year), 0, reform_year))
 
-cs_out <- att_gt(
+# Basic model run without formula
+cs_base <- att_gt(
   yname        = "credit_card_debt_real",
   tname        = "year",
   idname       = "state_id",
@@ -297,8 +299,30 @@ cs_out <- att_gt(
   data         = cs_sample
 )
  
-cs_event  <- aggte(cs_out, type = "dynamic")
-cs_simple <- aggte(cs_out, type = "simple")
+cs_event  <- aggte(cs_base, type = "dynamic")
+cs_simple <- aggte(cs_base, type = "simple")
+ 
+summary(cs_simple)   # single overall ATT
+summary(cs_event)     # event-study version
+ 
+ggdid(cs_event) +
+  labs(title = "Stage 7: Callaway-Sant'Anna event study, comp_reform on credit card debt")
+
+# Model run with extended formula
+cs_extended <- att_gt(
+  yname        = "credit_card_debt_real",
+  tname        = "year",
+  idname       = "state_id",
+  gname        = "reform_year_cs",
+  xformla      = ~ median_income_real + median_age,
+  control_group = "nevertreated",
+  clustervars  = "state",
+  data         = cs_sample,
+  est_method = "reg"
+)
+
+cs_event  <- aggte(cs_extended, type = "dynamic")
+cs_simple <- aggte(cs_extended, type = "simple")
  
 summary(cs_simple)   # single overall ATT
 summary(cs_event)     # event-study version
