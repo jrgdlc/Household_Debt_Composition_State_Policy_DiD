@@ -42,69 +42,14 @@ panel <- panel %>%
          poverty_share = poverty / total_pop,
          labor_share = labor_force / total_pop,
          unemployment_share = unemployed / total_pop,
+         white_share = white / total_pop,
+         black_share = black / total_pop,
+         native_share = native / total_pop,
+         asian_share = asian / total_pop,
          `18_29_share` = X18_29 / total_pop,
          `30_44_share` = X30_44 / total_pop,
          `45_64_share` = X45_64 / total_pop,
          `65_plus_share` = X65plus / total_pop)
-
-### Initial regressions using total_debt_real as dependent variable
-## Pooled regression baseline regressions (bias, not controlled for panel structure)
-pooled_lm_td <- lm(total_debt_real ~ comp_reform, data = panel)
-summary(pooled_lm_td)
-
-# Biased baseline extended with demographics
-pooled_lm_td_plus <- lm(total_debt_real ~ comp_reform + median_age + total_pop + white + black + native + asian + pacific + other + multiracial + hispanic + college + masters + professional + doctorate + poverty + median_income + labor_force + unemployed, data = panel)
-summary(pooled_lm_td_plus)
-
-
-## Panel data models controlling for panel structure and fixed effects
-# Simple regression total_debt vs comp_reforms
-feols_td_pooled <- feols(total_debt_real ~ comp_reform, data = panel)
-summary(feols_td_pooled)
-
-feols_td_state_fe <- feols(total_debt_real ~ comp_reform | state, data = panel)
-summary(feols_td_state_fe)
-
-feols_td_state_year_fe <- feols(total_debt_real ~ comp_reform | state + year, data = panel)
-summary(feols_td_state_year_fe)
-
-# Extensions with demographic variables
-feols_td_pooled_demo <- feols(total_debt_real ~ comp_reform + median_age + total_pop + white + black + native + asian + pacific + other + multiracial + hispanic + college + masters + professional + doctorate + poverty + median_income + labor_force + unemployed, data = panel)
-summary(feols_td_pooled_demo)
-
-feols_td_state_fe_demo <- feols(total_debt_real ~ comp_reform + median_age + total_pop + white + black + native + asian + pacific + other + multiracial + hispanic + college + masters + professional + doctorate + poverty + median_income + labor_force + unemployed | state, data = panel)
-summary(feols_td_state_fe_demo)
-
-feols_td_state_year_fe_demo <- feols(total_debt_real ~ comp_reform + median_age + total_pop + white + black + native + asian + pacific + other + multiracial + hispanic + college + masters + professional + doctorate + poverty + median_income + labor_force + unemployed | state + year, data = panel)
-summary(feols_td_state_year_fe_demo)
-
-### Regressions with credit_card_debt_real as dependent variable (likely more illustrative of potential payday reform effects)
-## Pooled regression baseline
-pooled_lm_cc <- lm(credit_card_debt_real ~ comp_reform, data = panel)
-summary(pooled_lm_cc)
-
-# extended with demographics
-pooled_lm_cc_plus <- lm(credit_card_debt_real ~ comp_reform + median_age + total_pop + white + black + native + asian + pacific + other + hispanic + college + masters + professional + doctorate + poverty + median_income + labor_force + unemployed, data = panel)
-summary(pooled_lm_cc_plus)
-
-## Panel credit card debt models
-feols_cc_pooled <- feols(credit_card_debt_real ~ comp_reform, data = panel)
-summary(feols_cc_pooled)
-
-feols_cc_state_fe <- feols(credit_card_debt_real ~ comp_reform | state, data = panel)
-summary(feols_cc_state_fe)
-
-feols_cc_state_year_fe <- feols(credit_card_debt_real ~ comp_reform | state + year, data = panel)
-summary(feols_cc_state_year_fe)
-
-feols_cc_pooled_demo <- feols(credit_card_debt_real ~ comp_reform + median_age + total_pop + white + black + native + asian + pacific + other + multiracial + hispanic + college + masters + professional + doctorate + poverty + median_income + labor_force + unemployed, data = panel)
-summary(feols_cc_pooled_demo)
-
-feols_cc_state_fe_demo <- feols(credit_card_debt_real ~ comp_reform + median_age + total_pop + white + black + native + asian + pacific + other + multiracial + hispanic + college + masters + professional + doctorate + poverty + median_income + labor_force + unemployed | state, data = panel)
-summary(feols_cc_state_fe_demo)
-
-feols_cc_state_year_fe_demo <- feols(credit_card_debt_real ~ comp_reform + median_age + total_pop + white + black + native + asian + pacific + other + multiracial + hispanic + college + masters + professional + doctorate + poverty + median_income + labor_force + unemployed | state + year, data = panel)
-summary(feols_cc_state_year_fe_demo)
 
 ### DiD Estimations
 ## Simple model: 2019 Colorado reform vs never reformed UT & KS (21 obs)
